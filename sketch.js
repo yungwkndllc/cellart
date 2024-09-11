@@ -1,29 +1,154 @@
-let cellSize = 20;
-let cols, rows;
+let cells = [];
+let numInitialCells = 50;
+let growthRate = 0.5;
+let minCellSize = 5;
 
 function setup() {
   createCanvas(400, 400);
-  cols = width / cellSize;
-  rows = height / cellSize;
   noStroke();
+
+  // Create initial cell seeds
+  for (let i = 0; i < numInitialCells; i++) {
+    cells.push(new Cell(random(width), random(height)));
+  }
 }
 
 function draw() {
-  background(220);
+  background(240, 240, 250);
 
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      let x = i * cellSize;
-      let y = j * cellSize;
-
-      // Generate a random color for each cell
-      fill(random(255), random(255), random(255));
-
-      // Draw the cell
-      ellipse(x + cellSize / 2, y + cellSize / 2, cellSize * 0.8);
+  // Grow existing cells
+  let growing = true;
+  while (growing) {
+    growing = false;
+    for (let cell of cells) {
+      if (cell.grow()) {
+        growing = true;
+      }
     }
   }
 
-  // Stop the draw loop after one frame
-  noLoop();
+  // Add new cells in empty spaces
+  let newCells = [];
+  for (let i = 0; i < 100; i++) {
+    let x = random(width);
+    let y = random(height);
+    if (isFreeSpace(x, y)) {
+      newCells.push(new Cell(x, y));
+    }
+  }
+  cells = cells.concat(newCells);
+
+  // Final expansion to close gaps
+  if (newCells.length === 0) {
+    for (let cell of cells) {
+      cell.finalExpand();
+    }
+    noLoop();
+  }
+
+  // Draw cells
+  for (let cell of cells) {
+    cell.display();
+  }
+}
+
+function isFreeSpace(x, y) {
+  for (let cell of cells) {
+    if (dist(x, y, cell.x, cell.y) < cell.size + minCellSize) {
+      return false;
+    }
+  }
+  return true;
+}
+
+class Cell {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.size = minCellSize;
+    this.color = color(
+      random(200, 240),
+      random(200, 240),
+      random(200, 240),
+      200
+    );
+    this.noiseOffset = random(1000);
+    this.points = 24;
+    this.vertices = [];
+    this.updateVertices();
+  }
+
+  updateVertices() {
+    this.vertices = [];
+    for (let i = 0; i < this.points; i++) {
+      let angle = map(i, 0, this.points, 0, TWO_PI);
+      let r =
+        this.size +
+        map(
+          noise(cos(angle) + 1, sin(angle) + 1, this.noiseOffset),
+          0,
+          1,
+          -this.size * 0.1,
+          this.size * 0.1
+        );
+      let x = this.x + cos(angle) * r;
+      let y = this.y + sin(angle) * r;
+      this.vertices.push(createVector(x, y));
+    }
+  }
+
+  grow() {
+    let canGrow = true;
+    for (let other of cells) {
+      if (other !== this && this.isColliding(other)) {
+        canGrow = false;
+        break;
+      }
+    }
+    if (canGrow) {
+      this.size += growthRate;
+      this.updateVertices();
+      return true;
+    }
+    return false;
+  }
+
+  finalExpand() {
+    this.size += 0.5;
+    this.updateVertices();
+  }
+
+  isColliding(other) {
+    for (let v of this.vertices) {
+      if (dist(v.x, v.y, other.x, other.y) < other.size) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  display() {
+    // Cell membrane
+    fill(this.color);
+    beginShape();
+    for (let v of this.vertices) {
+      curveVertex(v.x, v.y);
+    }
+    endShape(CLOSE);
+
+    // Nucleus
+    fill(100, 100, 150);
+    ellipse(this.x, this.y, this.size * 0.4);
+
+    // Organelles
+    for (let i = 0; i < 5; i++) {
+      let angle = random(TWO_PI);
+      let r = random(this.size * 0.2, this.size * 0.4);
+      let orgX = this.x + cos(angle) * r;
+      let orgY = this.y + sin(angle) * r;
+
+      fill(random(100, 200), random(100, 200), random(100, 200), 150);
+      ellipse(orgX, orgY, this.size * 0.1);
+    }
+  }
 }
