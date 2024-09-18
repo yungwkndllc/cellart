@@ -2,10 +2,17 @@ let cells = [];
 let numInitialCells = 50;
 let growthRate = 0.5;
 let minCellSize = 5;
+let worleyPoints = [];
+let numWorleyPoints = 20;
 
 function setup() {
   createCanvas(400, 400);
   noStroke();
+
+  // Generate Worley noise points
+  for (let i = 0; i < numWorleyPoints; i++) {
+    worleyPoints.push(createVector(random(width), random(height)));
+  }
 
   // Create initial cell seeds
   for (let i = 0; i < numInitialCells; i++) {
@@ -76,6 +83,7 @@ class Cell {
     this.points = 24;
     this.vertices = [];
     this.updateVertices();
+    this.worleyScale = random(0.5, 1.5);
   }
 
   updateVertices() {
@@ -91,10 +99,37 @@ class Cell {
           -this.size * 0.1,
           this.size * 0.1
         );
+
+      // Apply Worley noise
+      let worleyNoise = this.getWorleyNoise(
+        this.x + cos(angle) * r,
+        this.y + sin(angle) * r
+      );
+      r +=
+        map(worleyNoise, 0, 1, -this.size * 0.2, this.size * 0.2) *
+        this.worleyScale;
+
       let x = this.x + cos(angle) * r;
       let y = this.y + sin(angle) * r;
       this.vertices.push(createVector(x, y));
     }
+  }
+
+  getWorleyNoise(x, y) {
+    let closest = Infinity;
+    let secondClosest = Infinity;
+
+    for (let point of worleyPoints) {
+      let d = dist(x, y, point.x, point.y);
+      if (d < closest) {
+        secondClosest = closest;
+        closest = d;
+      } else if (d < secondClosest) {
+        secondClosest = d;
+      }
+    }
+
+    return map(secondClosest - closest, 0, 50, 0, 1);
   }
 
   grow() {
