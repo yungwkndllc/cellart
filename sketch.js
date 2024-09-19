@@ -5,40 +5,51 @@ let resolution = 20;
 let noiseScale = 0.1;
 let noiseStrength = 0.5;
 let colorPalettes = [
-  // Warm cellular
-  [
-    [255, 150, 150],
-    [255, 200, 150],
-    [255, 220, 200],
-  ],
-  // Cool cellular
-  [
-    [150, 200, 255],
-    [180, 220, 255],
-    [200, 240, 255],
-  ],
-  // Earthy tones
-  [
-    [200, 180, 140],
-    [180, 160, 120],
-    [160, 140, 100],
-  ],
-  // Vibrant cellular
-  [
-    [255, 100, 100],
-    [100, 255, 100],
-    [100, 100, 255],
-  ],
-  // Pastel cellular
-  [
-    [255, 200, 200],
-    [200, 255, 200],
-    [200, 200, 255],
-  ],
+  {
+    name: "Warm Cellular",
+    colors: [
+      [255, 150, 150],
+      [255, 200, 150],
+      [255, 220, 200],
+    ],
+  },
+  {
+    name: "Cool Cellular",
+    colors: [
+      [150, 200, 255],
+      [180, 220, 255],
+      [200, 240, 255],
+    ],
+  },
+  {
+    name: "Earthy Tones",
+    colors: [
+      [200, 180, 140],
+      [180, 160, 120],
+      [160, 140, 100],
+    ],
+  },
+  {
+    name: "Vibrant Cellular",
+    colors: [
+      [255, 100, 100],
+      [100, 255, 100],
+      [100, 100, 255],
+    ],
+  },
+  {
+    name: "Pastel Cellular",
+    colors: [
+      [255, 200, 200],
+      [200, 255, 200],
+      [200, 200, 255],
+    ],
+  },
 ];
 let selectedPalette;
 let ecmColor;
 let zoff = 0;
+let selectedECMFunction;
 
 function setup() {
   createCanvas(800, 600);
@@ -47,12 +58,13 @@ function setup() {
 
   // Select a single palette for all cells
   selectedPalette = random(colorPalettes);
+  console.log("Selected palette:", selectedPalette.name);
 
   // Set ECM color based on the selected palette
   ecmColor = color(
-    selectedPalette[0][0] * 0.8,
-    selectedPalette[0][1] * 0.8,
-    selectedPalette[0][2] * 0.8,
+    selectedPalette.colors[0][0] * 0.8,
+    selectedPalette.colors[0][1] * 0.8,
+    selectedPalette.colors[0][2] * 0.8,
     50
   );
 
@@ -74,23 +86,36 @@ function setup() {
 
   background(240, 240, 250);
   drawECM();
+
+  // Randomly select an ECM function
+  selectedECMFunction = random([drawECM1, drawECM2, drawECM3]);
+
+  // Log all the selected functions
+  console.log(selectedECMFunction);
+  console.log(selectedPalette.name);
+
+  for (let i = 0; i < 100; i++) {
+    // Semi-transparent background for trail effect
+    background(240, 240, 250, 10);
+
+    // Only draw ECM on the first frame using the selected function
+    selectedECMFunction();
+
+    // Update and display particles
+    for (let cell of particles) {
+      cell.follow(flowField);
+      cell.update();
+      cell.display();
+    }
+
+    zoff += 0.01;
+  }
 }
 
 function draw() {
-  // Semi-transparent background for trail effect
-  background(240, 240, 250, 10);
-
-  // Redraw ECM with slight transparency
-  drawECM(200);
-
-  // Update and display particles
-  for (let cell of particles) {
-    cell.follow(flowField);
-    cell.update();
-    cell.display();
+  if (frameCount > 100) {
+    noLoop();
   }
-
-  zoff += 0.01;
 }
 
 function updateFlowField() {
@@ -112,23 +137,111 @@ function drawECM(alpha = 255) {
   stroke(ecmColor);
   strokeWeight(0.3);
 
-  for (let i = 0; i < width; i += 15) {
-    for (let j = 0; j < height; j += 15) {
-      let n = noise(i * 0.005, j * 0.005);
-      if (n > 0.4) {
-        push();
-        translate(i, j);
-        rotate(n * TWO_PI);
-        beginShape();
-        for (let k = 0; k < 5; k++) {
-          let x = cos((k * TWO_PI) / 5) * 10 * n;
-          let y = sin((k * TWO_PI) / 5) * 10 * n;
-          curveVertex(x, y);
-        }
-        endShape(CLOSE);
-        pop();
+  let numElements = (width * height) / 400; // Adjust this value to control density
+
+  for (let i = 0; i < numElements; i++) {
+    let x = random(width);
+    let y = random(height);
+    let n = noise(x * 0.005, y * 0.005, frameCount * 0.01);
+
+    if (n > 0.4) {
+      push();
+      translate(x, y);
+      rotate(n * TWO_PI);
+      beginShape();
+      let sides = floor(random(3, 7));
+      for (let k = 0; k < sides; k++) {
+        let radius = random(5, 15) * n;
+        let vx = cos((k * TWO_PI) / sides) * radius;
+        let vy = sin((k * TWO_PI) / sides) * radius;
+        curveVertex(vx, vy);
       }
+      endShape(CLOSE);
+      pop();
     }
+  }
+}
+
+function drawECM1() {
+  // Original ECM function
+  noFill();
+  stroke(ecmColor);
+  strokeWeight(0.3);
+
+  let numElements = (width * height) / 400;
+
+  for (let i = 0; i < numElements; i++) {
+    let x = random(width);
+    let y = random(height);
+    let n = noise(x * 0.005, y * 0.005, frameCount * 0.01);
+
+    if (n > 0.4) {
+      push();
+      translate(x, y);
+      rotate(n * TWO_PI);
+      beginShape();
+      let sides = floor(random(3, 7));
+      for (let k = 0; k < sides; k++) {
+        let radius = random(5, 15) * n;
+        let vx = cos((k * TWO_PI) / sides) * radius;
+        let vy = sin((k * TWO_PI) / sides) * radius;
+        curveVertex(vx, vy);
+      }
+      endShape(CLOSE);
+      pop();
+    }
+  }
+}
+
+function drawECM2() {
+  // New ECM function with circular patterns
+  noFill();
+  stroke(ecmColor);
+  strokeWeight(0.3);
+
+  let numCircles = 50;
+  for (let i = 0; i < numCircles; i++) {
+    let x = random(width);
+    let y = random(height);
+    let radius = random(10, 50);
+    let segments = floor(random(5, 15));
+
+    beginShape();
+    for (let j = 0; j <= segments; j++) {
+      let angle = map(j, 0, segments, 0, TWO_PI);
+      let r = radius + random(-5, 5);
+      let px = x + cos(angle) * r;
+      let py = y + sin(angle) * r;
+      curveVertex(px, py);
+    }
+    endShape(CLOSE);
+  }
+}
+
+function drawECM3() {
+  // New ECM function with line-based patterns
+  stroke(ecmColor);
+  strokeWeight(0.3);
+
+  let numLines = 200;
+  for (let i = 0; i < numLines; i++) {
+    let x1 = random(width);
+    let y1 = random(height);
+    let angle = random(TWO_PI);
+    let length = random(20, 100);
+    let x2 = x1 + cos(angle) * length;
+    let y2 = y1 + sin(angle) * length;
+
+    let midX = (x1 + x2) / 2;
+    let midY = (y1 + y2) / 2;
+    let ctrlX = midX + random(-20, 20);
+    let ctrlY = midY + random(-20, 20);
+
+    noFill();
+    beginShape();
+    vertex(x1, y1);
+    quadraticVertex(ctrlX, ctrlY, x2, y2);
+    endShape();
   }
 }
 
@@ -146,7 +259,7 @@ class Cell {
   }
 
   getRandomColorFromPalette() {
-    let baseColor = random(selectedPalette);
+    let baseColor = random(selectedPalette.colors);
     return color(
       baseColor[0] + random(-20, 20),
       baseColor[1] + random(-20, 20),
@@ -235,10 +348,11 @@ class Cell {
 
 function mousePressed() {
   selectedPalette = random(colorPalettes);
+  console.log("New selected palette:", selectedPalette.name);
   ecmColor = color(
-    selectedPalette[0][0] * 0.8,
-    selectedPalette[0][1] * 0.8,
-    selectedPalette[0][2] * 0.8,
+    selectedPalette.colors[0][0] * 0.8,
+    selectedPalette.colors[0][1] * 0.8,
+    selectedPalette.colors[0][2] * 0.8,
     50
   );
   for (let cell of particles) {

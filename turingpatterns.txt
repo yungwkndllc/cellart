@@ -1,0 +1,79 @@
+#in different cell:
+%matplotlib inline
+
+#next cell:
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import convolve
+from ipywidgets import interact, IntSlider
+from IPython.display import clear_output
+
+def create_oval(center, axes, grid_size):
+    y, x = np.ogrid[:grid_size[0], :grid_size[1]]
+    mask = ((x - center[1])**2 / axes[1]**2 + (y - center[0])**2 / axes[0]**2) <= 1
+    return mask.astype(float)
+
+def reaction_diffusion(a, b, da, db, f, k, dt, kernel):
+    laplacian_a = convolve(a, kernel, mode='reflect')
+    laplacian_b = convolve(b, kernel, mode='reflect')
+    reaction = a * b**2
+    diff_a = da * laplacian_a - reaction + f * (1 - a)
+    diff_b = db * laplacian_b + reaction - (f + k) * b
+    
+    a += np.clip(diff_a * dt, -1, 1)
+    b += np.clip(diff_b * dt, -1, 1)
+    
+    a = np.clip(a, 0, 1)
+    b = np.clip(b, 0, 1)
+    
+    return a, b
+
+# Simulation parameters
+size = 200  # Size of the grid
+da, db = 1.5, 1.5  # Diffusion rates
+f, k = 0.055, 0.062  # Reaction parameters
+dt = 0.01  # Time step
+
+# Laplacian kernel
+kernel = np.array([[0.05, 0.2, 0.05],
+                   [0.2 , -1. , 0.2 ],
+                   [0.05, 0.2, 0.05]])
+
+# Create a slider for the number of steps
+steps_slider = IntSlider(min=0, max=2000, step=10, value=0, description='Steps')
+
+def update_plot(steps):
+    # Initialize concentrations with some noise for irregularity
+    a = np.ones((size, size)) + 0.01 * np.random.random((size, size))
+    b = np.zeros((size, size)) + 0.01 * np.random.random((size, size))
+    
+    # Create clusters of ovals
+    num_clusters = np.random.randint(3, 6)  # Random number of clusters
+    cluster_radius = 20  # Max radius of each cluster
+
+    for _ in range(num_clusters):
+        # Randomly choose a center point for the cluster
+        cluster_center = np.random.randint(cluster_radius, size - cluster_radius, 2)
+        # Place several ovals around the center point to form a cluster
+        for _ in range(np.random.randint(6, 12)):  # Number of ovals in the cluster
+            # Each oval's center is near the cluster's center
+            center_offset = np.random.randint(-cluster_radius, cluster_radius, 2)
+            oval_center = cluster_center + center_offset
+            axes = np.random.randint(3, 7, 2)  # Minor and major axes lengths for the ovals
+            oval_mask = create_oval(oval_center, axes, a.shape)
+            b += oval_mask
+    
+    # Run the simulation for the given number of steps, but only in regions where cells exist
+    for _ in range(steps):
+        a, b = reaction_diffusion(a, b, da, db, f, k, dt, kernel)
+        b *= (b > 0.2)  # Apply reaction-diffusion only where b concentration is significant
+    
+    # Display the updated plot
+    plt.imshow(b, cmap='RdGy')
+    plt.title(f"Reaction-Diffusion Pattern at Step {steps}")
+    plt.colorbar()
+    plt.show()
+
+# Use the interact function to bind the slider and the update function
+interact(update_plot, steps=steps_slider)
+
