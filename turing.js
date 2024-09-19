@@ -36,6 +36,31 @@ const palettes = [
     [255, 105, 180],
     [255, 255, 0],
   ], // Vibrant purple
+  [
+    [255, 87, 51],
+    [255, 189, 41],
+    [18, 203, 196],
+  ], // Tropical sunset
+  [
+    [46, 134, 193],
+    [241, 196, 15],
+    [231, 76, 60],
+  ], // Primary bold
+  [
+    [155, 89, 182],
+    [52, 152, 219],
+    [26, 188, 156],
+  ], // Cool jewel tones
+  [
+    [243, 156, 18],
+    [211, 84, 0],
+    [192, 57, 43],
+  ], // Autumn leaves
+  [
+    [106, 176, 76],
+    [199, 244, 100],
+    [39, 174, 96],
+  ], // Fresh greens
 ];
 let currentPalette;
 
@@ -185,12 +210,17 @@ function inverse_fft(fft_x, fft_y, hamming = false, repeat = false) {
 }
 
 // New variables for flow field and particles
-const particleCount = 100;
-const particleLifespan = 200;
+const particleCount = 50; // Increased from 10
+const particleLifespan = 50;
 let particles = [];
 let flowField;
 
-// New Particle class
+// Add this at the top of your file with other global variables
+let clusterPalettes = [];
+
+let globalPalette = palettes[0];
+
+// Modify the Particle class
 class Particle {
   constructor() {
     this.position = createVector(random(width), random(height));
@@ -198,6 +228,7 @@ class Particle {
     this.acceleration = createVector(0, 0);
     this.lifespan = particleLifespan;
     this.previousPosition = this.position.copy();
+    this.clusterPalette = null;
   }
 
   update() {
@@ -228,8 +259,12 @@ class Particle {
   }
 
   createCluster() {
-    const clusterRadius = 5;
-    const numOvals = 3 + Math.floor(random() * 3);
+    const clusterRadius = 30; // Increased from 10
+    const numOvals = 20; // Increased from 10
+
+    // Assign a new random palette for this cluster
+    this.clusterPalette = globalPalette;
+
     for (let j = 0; j < numOvals; j++) {
       const centerOffset = [
         Math.floor(random() * 2 * clusterRadius) - clusterRadius,
@@ -239,12 +274,16 @@ class Particle {
         constrain(this.position.x + centerOffset[0], 0, size - 1),
         constrain(this.position.y + centerOffset[1], 0, size - 1),
       ];
-      const axes = [1 + Math.floor(random() * 2), 1 + Math.floor(random() * 2)];
+      const axes = [2 + Math.floor(random() * 2), 2 + Math.floor(random() * 2)]; // Increased oval size
       const ovalMask = createOval(ovalCenter, axes, [size, size]);
 
       for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
-          b[y][x] += ovalMask[y][x] * 0.5;
+          if (ovalMask[y][x] > 0) {
+            b[y][x] += ovalMask[y][x] * 0.5;
+            // Store the palette index for this pixel
+            clusterPalettes[y * size + x] = this.clusterPalette;
+          }
         }
       }
     }
@@ -259,7 +298,7 @@ class Particle {
 
   draw() {
     stroke(255, 50); // White color with more transparency
-    strokeWeight(1);
+    strokeWeight(5);
     line(
       this.previousPosition.x,
       this.previousPosition.y,
@@ -269,7 +308,7 @@ class Particle {
   }
 }
 
-// Modified setup function
+// Modify the setup function
 function setup() {
   createCanvas(size, size);
   pixelDensity(1);
@@ -291,10 +330,15 @@ function setup() {
     return;
   }
 
-  // Create particles
+  // Create more particles
   for (let i = 0; i < particleCount; i++) {
     particles.push(new Particle());
   }
+
+  // Initialize clusterPalettes
+  clusterPalettes = new Array(size * size).fill(null);
+
+  globalPalette = random(palettes);
 }
 
 // New function to create flow field
@@ -312,7 +356,7 @@ function createFlowField() {
   return field;
 }
 
-// Modified draw function
+// Modify the draw function
 function draw() {
   // Run one step of the simulation
   [a, b] = reactionDiffusion(a, b, da, db, f, k, dt, kernel);
@@ -331,10 +375,16 @@ function draw() {
       const index = (y * size + x) * 4;
       const value = b[y][x];
 
-      // Interpolate between two colors based on the value
-      const color1 = currentPalette[0];
-      const color2 = currentPalette[1];
-      const color3 = currentPalette[2];
+      // Use the cluster's palette if available, otherwise use black background
+      const palette = clusterPalettes[y * size + x] || [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+      ];
+
+      const color1 = palette[0];
+      const color2 = palette[1];
+      const color3 = palette[2];
 
       let r, g, bl;
       if (value < 0.5) {
@@ -363,8 +413,21 @@ function draw() {
     particle.draw();
   }
 
+  if (frameCount % 50 === 0) {
+    console.log("Frame count: ", frameCount);
+  }
+
+  if (frameCount % 100 === 0) {
+    globalPalette = random(palettes);
+    flowField = createFlowField();
+  }
+
+  //   if (frameCount === 300) {
+  //     flowField = createFlowField();
+  //   }
+
   // Stop the simulation after 1000 frames
-  if (frameCount >= 1000) {
+  if (frameCount >= 600) {
     noLoop();
   }
 }
