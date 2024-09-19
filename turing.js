@@ -297,7 +297,9 @@ class Particle {
   }
 
   draw() {
-    stroke(255, 50); // White color with more transparency
+    // stroke(255, 50); // White color with more transparency
+    // stroke(random(globalPalette));
+    stroke(255);
     strokeWeight(5);
     line(
       this.previousPosition.x,
@@ -421,6 +423,11 @@ function draw() {
     globalPalette = random(palettes);
     flowField = createFlowField();
   }
+
+  stroke(255);
+  noFill();
+  fill(255, 50);
+  rect((width * 1) / 8, (height * 1) / 8, (width * 3) / 4, (height * 3) / 4);
 
   //   if (frameCount === 300) {
   //     flowField = createFlowField();
