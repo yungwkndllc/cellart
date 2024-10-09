@@ -98,7 +98,7 @@ function setup() {
       random(MIN_COLONY_TIGHTNESS, MAX_COLONY_TIGHTNESS),
       typeFillColors[type],
       typeNucleusColors[type],
-      random() * 4
+      random() * 4 + 1
     );
     cells.push(cell);
   }
@@ -108,7 +108,7 @@ function setup() {
     cell.display();
   }
 
-  applyMonochromaticGrain(42);
+  applyMonochromaticGrain(random(10, 42));
 }
 
 function draw() {
