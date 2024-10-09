@@ -54,6 +54,7 @@ const MAX_COLONY_TIGHTNESS = 10;
 const CELL_TYPES = [1, 2, 3, 4, 5, 6]; // Add cell type 4
 
 function setup() {
+  p5grain.setup();
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
   noLoop(); // Ensure draw() is only called once
 
@@ -105,6 +106,8 @@ function setup() {
   for (let cell of cells) {
     cell.display();
   }
+
+  applyMonochromaticGrain(100);
 }
 
 function draw() {
