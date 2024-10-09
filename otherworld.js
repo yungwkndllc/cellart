@@ -97,7 +97,8 @@ function setup() {
       borderColor,
       random(MIN_COLONY_TIGHTNESS, MAX_COLONY_TIGHTNESS),
       typeFillColors[type],
-      typeNucleusColors[type]
+      typeNucleusColors[type],
+      random() * 4
     );
     cells.push(cell);
   }
@@ -107,7 +108,7 @@ function setup() {
     cell.display();
   }
 
-  applyMonochromaticGrain(100);
+  applyMonochromaticGrain(42);
 }
 
 function draw() {
@@ -187,12 +188,14 @@ class Cell {
     borderColorIndex,
     colonyTightness,
     fillColor,
-    nucleusColor
+    nucleusColor,
+    sizeMultiplier
   ) {
     this.type = parseInt(type);
     this.colonyTightness = colonyTightness;
     this.position = this.getFlowPosition();
     this.size = this.getSize();
+    this.size = this.size * sizeMultiplier;
     this.borderColor = color(...COLORS[borderColorIndex], 255);
     this.color = color(...fillColor, 200);
     this.nucleusColor = color(...nucleusColor, 255);
