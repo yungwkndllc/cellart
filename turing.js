@@ -14,6 +14,8 @@ const kernel = [
 
 let a, b;
 
+let windowColor;
+
 // Color palettes
 const palettes = [
   [
@@ -341,6 +343,8 @@ function setup() {
   clusterPalettes = new Array(size * size).fill(null);
 
   globalPalette = random(palettes);
+
+  windowColor = random(globalPalette);
 }
 
 // New function to create flow field
@@ -421,17 +425,14 @@ function draw() {
 
   if (frameCount % 100 === 0) {
     globalPalette = random(palettes);
+    windowColor = random(globalPalette);
     flowField = createFlowField();
   }
 
-  stroke(255);
-  noFill();
-  fill(255, 50);
-  rect((width * 1) / 8, (height * 1) / 8, (width * 3) / 4, (height * 3) / 4);
-
-  //   if (frameCount === 300) {
-  //     flowField = createFlowField();
-  //   }
+  // stroke(255);
+  // noFill();
+  // fill(...windowColor, 50);
+  // rect((width * 1) / 8, (height * 1) / 8, (width * 3) / 4, (height * 3) / 4);
 
   // Stop the simulation after 1000 frames
   if (frameCount >= 600) {
